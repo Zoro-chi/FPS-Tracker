@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 
     id("com.google.gms.google-services")
+
+//    id"(kotlin-android")
+    id("kotlin-kapt")
 }
 
 android {
@@ -58,4 +61,8 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx")
+
+    implementation("com.github.bumptech.glide:glide:4.15.1")
+//    kapt("com.github.bumptech.glide:compiler:4.15.1'")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
 }
