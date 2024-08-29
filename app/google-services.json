@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "14735097387",
+    "project_id": "fps-game-tracker",
+    "storage_bucket": "fps-game-tracker.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:14735097387:android:d516b8c2b9954164b6746e",
+        "android_client_info": {
+          "package_name": "ng.com.zorochi.fpsgametracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJ4wUpdhUtFUE-1Tc1ZmkHUXKHypAsryw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
