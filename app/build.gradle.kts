@@ -20,7 +20,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
     }
+
+
 
     buildTypes {
         release {
@@ -65,4 +69,6 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.15.1")
 //    kapt("com.github.bumptech.glide:compiler:4.15.1'")
     annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
+
+    implementation("com.google.firebase:firebase-firestore-ktx")
 }

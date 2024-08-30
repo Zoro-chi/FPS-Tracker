@@ -1,2 +1,11 @@
+# Ignore build directory
 /build
-google-services.json
+
+# Ignore Google Services JSON file
+/app/google-services.json
+
+# Ignore other typical Android/Gradle files
+/.gradle
+/local.properties
+/.idea
+/captures
