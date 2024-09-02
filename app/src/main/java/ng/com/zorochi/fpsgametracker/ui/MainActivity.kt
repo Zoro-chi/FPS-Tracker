@@ -1,4 +1,4 @@
-package ng.com.zorochi.fpsgametracker
+package ng.com.zorochi.fpsgametracker.ui
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.Toast
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
+import ng.com.zorochi.fpsgametracker.R
 
 class MainActivity : AppCompatActivity() {
 
@@ -52,7 +53,9 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 } else {
                     // Login failed
-                    Toast.makeText(this, "Login Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(this, "Login Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Login Failed: Invalid Email or Password", Toast.LENGTH_SHORT).show()
+
                 }
             }
     }

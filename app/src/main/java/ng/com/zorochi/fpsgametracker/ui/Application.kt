@@ -1,4 +1,4 @@
-package ng.com.zorochi.fpsgametracker
+package ng.com.zorochi.fpsgametracker.ui
 
 import android.app.Application
 import android.util.Log

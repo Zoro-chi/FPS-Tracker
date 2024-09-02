@@ -1,16 +1,25 @@
-package ng.com.zorochi.fpsgametracker
+@file:Suppress("PackageDirectoryMismatch", "PackageDirectoryMismatch", "PackageDirectoryMismatch")
+
+package ng.com.zorochi.fpsgametracker.ui
 
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import ng.com.zorochi.fpsgametracker.Game
+import ng.com.zorochi.fpsgametracker.GamesAdapter
+import ng.com.zorochi.fpsgametracker.R
+import ng.com.zorochi.fpsgametracker.data.AppDatabase
 
 class HomeActivity : AppCompatActivity() {
 
@@ -21,8 +30,6 @@ class HomeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
         setContentView(R.layout.activity_home)
-
-        showToast("Test Toast Message")
 
         val gamesRecyclerView = findViewById<RecyclerView>(R.id.gamesRecyclerView)
         gamesRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -36,49 +43,64 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun fetchGames() {
-        val db = FirebaseFirestore.getInstance()
+        val db = AppDatabase.getDatabase(applicationContext)
+        val gameDao = db.gameDao()
 
-        db.collection("games")
-            .get()
-            .addOnSuccessListener { result ->
-                val fetchedGamesList = mutableListOf<Game>()
-                for (document in result) {
-                    val game = document.toObject(Game::class.java)
-                    fetchedGamesList.add(game)
-                }
+        gameDao.getAllGames().observe(this, Observer { games ->
+            if (games.isNotEmpty()) {
                 gamesList.clear()
-                gamesList.addAll(fetchedGamesList)
+                gamesList.addAll(games)
                 adapter.notifyDataSetChanged()
-                fetchFavorites() // Call fetchFavorites after games are fetched
+            } else {
+                syncDataWithFirebase()
             }
-            .addOnFailureListener { exception ->
-                Log.e("HomeActivity", "Failed to fetch games", exception)
-            }
+        })
     }
 
-    private fun fetchFavorites() {
+    private fun syncDataWithFirebase() {
+        val firestore = FirebaseFirestore.getInstance()
+        val gamesCollection = firestore.collection("games")
         val userId = FirebaseAuth.getInstance().currentUser?.uid
-        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app/").reference
+        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app").reference
 
-        if (userId != null) {
-            val favoritesRef = database.child("users").child(userId).child("favorites")
-
-            favoritesRef.get().addOnSuccessListener { snapshot ->
-                val favoriteGameIds = snapshot.children.map { it.key }
-                Log.d("HomeActivity", "Favorite game ids: $favoriteGameIds")
-
-                gamesList.forEach { game ->
-                    game.isFavorite = favoriteGameIds.contains(game.name)
-                }
-
-                adapter.notifyDataSetChanged()
-                showToast("Fetched favorites")
-            }.addOnFailureListener { exception ->
-                showToast("Failed to fetch favorites")
-                Log.e("HomeActivity", "Failed to fetch favorites", exception)
+        gamesCollection.get().addOnSuccessListener { snapshot ->
+            val games = mutableListOf<Game>()
+            for (document in snapshot.documents) {
+                val game = document.toObject(Game::class.java)
+                game?.let { games.add(it) }
             }
-        } else {
-            showToast("User is not authenticated")
+
+            if (userId != null) {
+                val favoritesRef = database.child("users").child(userId).child("favorites")
+
+                favoritesRef.get().addOnSuccessListener { snapshot ->
+                    val favoriteGameIds = snapshot.children.map { it.key }
+
+                    games.forEach { game ->
+                        game.isFavorite = favoriteGameIds.contains(game.name)
+                    }
+
+                    GlobalScope.launch {
+                        val db = AppDatabase.getDatabase(applicationContext)
+                        val gameDao = db.gameDao()
+                        for (game in games) {
+                            gameDao.insertGame(game)
+                        }
+                    }
+                }.addOnFailureListener { exception ->
+                    Log.e("HomeActivity", "Failed to fetch favorites from Realtime Database", exception)
+                }
+            } else {
+                GlobalScope.launch {
+                    val db = AppDatabase.getDatabase(applicationContext)
+                    val gameDao = db.gameDao()
+                    for (game in games) {
+                        gameDao.insertGame(game)
+                    }
+                }
+            }
+        }.addOnFailureListener { exception ->
+            Log.e("HomeActivity", "Failed to sync data with Firestore", exception)
         }
     }
 
@@ -97,6 +119,12 @@ class HomeActivity : AppCompatActivity() {
                 favoriteButton.setImageResource(R.drawable.favorite_filled)
                 showToast("Added to favorites")
             }
+
+            GlobalScope.launch {
+                val db = AppDatabase.getDatabase(applicationContext)
+                val gameDao = db.gameDao()
+                gameDao.insertGame(game)
+            }
         } else {
             showToast("User is not authenticated")
         }
@@ -105,7 +133,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun addGameToFavorites(userId: String, gameName: String) {
-        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app/").reference
+        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app").reference
         val favoriteRef = database.child("users").child(userId).child("favorites").child(gameName)
         Log.d("HomeActivity", "FavoriteRef: $favoriteRef")
 
@@ -122,7 +150,7 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun removeGameFromFavorites(userId: String, gameName: String) {
-        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app/").reference
+        val database = FirebaseDatabase.getInstance("https://fps-game-tracker-default-rtdb.europe-west1.firebasedatabase.app").reference
         val favoriteRef = database.child("users").child(userId).child("favorites").child(gameName)
 
         Log.d("HomeActivity", "Removing game from favorites: $gameName for user: $userId")
